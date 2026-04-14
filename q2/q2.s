@@ -17,94 +17,104 @@ main:
     sd s7, 24(sp)
     sd s8, 16(sp)
     
-    mv s0,a0
-    mv s1,a1
-    addi s2,s0,-1
-    ble s2,zero,end
+    mv s0,a0              # argc
+    mv s1,a1              # argv
+    addi s2,s0,-1         # n = argc - 1
+    ble s2,zero,end       # if no elements → exit
     
-    slli s6,s2,2
+    slli s6,s2,2          # size = n * 4
     mv a0,s6
     call malloc
-    mv s3,a0
+    mv s3,a0              # arr[]
 
     mv a0,s6
     call malloc
-    mv s4,a0
+    mv s4,a0              # result[]
 
     mv a0,s6
     call malloc
-    mv s5,a0
+    mv s5,a0              # stack (stores indices)
 
 argu:
-    li s7,0
+    li s7,0               # i = 0
 
 loading_loop:
     bge s7,s2, prepare
     addi t0, s7,1
-    slli t0,t0,3
+    slli t0,t0,3          # argv offset (8 bytes each)
     add t0,s1,t0
     ld a0,0(t0)
-    call atoi
+    call atoi             # convert string → int
     slli t1,s7,2
     add t1,s3,t1
-    sw a0,0(t1)
+    sw a0,0(t1)           # arr[i] = value
     addi s7,s7,1
     j loading_loop
 
 prepare:
-    li s6,-1
-    addi s7,s2,-1
+    li s6,-1              # stack top = -1
+    addi s7,s2,-1         # start from right
 
 compute:
     blt s7,zero,print_fianl
+
     slli t0,s7,2
     add t0, s3,t0
-    lw t4,0(t0)
+    lw t4,0(t0)           # current element arr[i]
 
 pop:
     blt s6,zero, set_result
+
     slli t0,s6,2
     add t0,s5,t0
-    lw t0, 0(t0)
+    lw t0, 0(t0)          # index from stack
+
     slli t1,t0,2
     add t1,s3,t1
-    lw t1,0(t1)
-    bgt t1,t4,set_result
-    addi s6,s6,-1
+    lw t1,0(t1)           # arr[index]
+
+    bgt t1,t4,set_result  # found greater element
+    addi s6,s6,-1         # pop
     j pop
 
 set_result:
     slli t0,s7,2
-    add t0,s4,t0
+    add t0,s4,t0          # result[i]
+
     blt s6,zero,no_greater
+
     slli t1,s6,2
     add t1,s5,t1
-    lw t1,0(t1)
-    sw t1,0(t0)
+    lw t1,0(t1)           # top index
+    sw t1,0(t0)           # store index of next greater
     j push
 
 no_greater:
     li t1,-1
-    sw t1,0(t0)
+    sw t1,0(t0)           # no greater → -1
 
 push:
     addi s6,s6,1
     slli t0,s6,2
     add t0,s5,t0
-    sw s7,0(t0)
+    sw s7,0(t0)           # push current index
+
     addi s7,s7,-1
     j compute
 
 print_fianl:
-    li s8,0
+    li s8,0               # i = 0
 
 print_loop:
     bge s8,s2,new
+
     slli t0,s8,2
     add t0,s4,t0
-    lw a1,0(t0)
+    lw a1,0(t0)           # result[i]
+
     la a0,fmt
     call printf
+
     addi s8,s8,1
     j print_loop
 
@@ -125,8 +135,3 @@ end:
     ld s8, 16(sp)
     addi sp,sp,96
     ret
-
-
-
-
-    
